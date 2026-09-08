@@ -1,0 +1,22 @@
+============================================================
+5G DISTRIBUTED IDS - BEST MODEL PERFORMANCE
+============================================================
+
+Best Model: DNN
+Dataset: 2002 balanced samples (1001 Normal + 1001 Attack)
+Features used: 20
+
+Test Set Performance:
+  - Accuracy:  0.9726 (97.26%)
+  - Precision: 0.9565 (95.65%)
+  - Recall:    0.9900 (99.00%)
+  - F1-Score:  0.9730 (97.30%)
+
+ROC-AUC: 0.9962
+PR-AUC: 0.9961
+
+Confusion Matrix:
+  True Negatives (Normal correctly classified):  192
+  False Positives (Normal misclassified as Attack): 9
+  False Negatives (Attack misclassified as Normal): 2
+  True Positives (Attack correctly classified):  198

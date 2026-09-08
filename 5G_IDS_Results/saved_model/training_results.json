@@ -1,0 +1,44 @@
+{
+  "accuracy": 0.9476309226932669,
+  "precision": 0.9637305699481865,
+  "recall": 0.93,
+  "f1_score": 0.9465648854961832,
+  "confusion_matrix": [
+    [
+      194,
+      7
+    ],
+    [
+      14,
+      186
+    ]
+  ],
+  "features": [
+    "Offset",
+    "sMeanPktSz",
+    "sTtl",
+    "sHops",
+    "TcpRtt",
+    "State",
+    "AckDat",
+    "SynAck",
+    "Proto",
+    "SrcBytes",
+    "TotBytes",
+    "SrcRate",
+    "Max",
+    "Load",
+    "Dur",
+    "SrcLoad",
+    "Rate",
+    "RunTime",
+    "Cause",
+    "Min"
+  ],
+  "n_features": 20,
+  "train_samples": 1200,
+  "val_samples": 401,
+  "test_samples": 401,
+  "normal_samples": 1001,
+  "attack_samples": 1001
+}

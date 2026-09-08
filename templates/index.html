@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEGIS 5G - Intrusion Detection System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6c47ff;
+            --primary-dark: #4a2fd4;
+            --accent: #00f5d4;
+            --accent2: #ff4d6d;
+            --bg: #07080f;
+            --bg2: #0d0f1c;
+            --bg3: #121428;
+            --surface: #181a2e;
+            --surface2: #1e2040;
+            --border: rgba(108,71,255,0.25);
+            --text: #e8e9f5;
+            --text2: #9899b8;
+            --text3: #6c6e8a;
+            --success: #00d68f;
+            --danger: #ff4d6d;
+            --warning: #ffbe00;
+            --glow: 0 0 30px rgba(108,71,255,0.4);
+            --glow-accent: 0 0 30px rgba(0,245,212,0.3);
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Syne', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            cursor: default;
+        }
+
+        /* ─── ANIMATED BG ─── */
+        .bg-canvas {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            overflow: hidden;
+        }
+        .bg-canvas::before {
+            content: '';
+            position: absolute; inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 10% 10%, rgba(108,71,255,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 90% 80%, rgba(0,245,212,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 40% at 50% 50%, rgba(255,77,109,0.05) 0%, transparent 60%);
+            animation: bgPulse 8s ease-in-out infinite alternate;
+        }
+        @keyframes bgPulse {
+            0% { opacity: 0.7; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.05); }
+        }
+        .grid-overlay {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background-image:
+                linear-gradient(rgba(108,71,255,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(108,71,255,0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: gridScroll 30s linear infinite;
+        }
+        @keyframes gridScroll {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 40px; }
+        }
+
+        /* Floating particles */
+        .particle {
+            position: fixed; border-radius: 50%;
+            pointer-events: none; z-index: 0;
+            animation: floatParticle linear infinite;
+        }
+        @keyframes floatParticle {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) rotate(720deg); opacity: 0; }
+        }
+
+        /* ─── LAYOUT ─── */
+        .container { max-width: 1300px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 1; }
+
+        /* ─── HEADER ─── */
+        .header {
+            text-align: center;
+            padding: 60px 20px 40px;
+            position: relative;
+        }
+        .header-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(108,71,255,0.15); border: 1px solid var(--border);
+            border-radius: 100px; padding: 6px 18px; font-size: 0.75em;
+            color: var(--accent); font-family: 'Space Mono', monospace;
+            letter-spacing: 0.1em; margin-bottom: 20px;
+            animation: slideDown 0.6s ease both, badgePulse 3s ease-in-out infinite;
+        }
+        @keyframes badgePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,245,212,0); }
+            50% { box-shadow: 0 0 0 6px rgba(0,245,212,0.1); }
+        }
+        .header-badge::before { content: ''; width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: blink 1.5s ease-in-out infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .header h1 {
+            font-size: clamp(2.4em, 6vw, 4.5em);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff 0%, var(--accent) 50%, var(--primary) 100%);
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: slideDown 0.7s ease both 0.1s, shimmer 4s linear infinite;
+            background-size: 200% auto;
+        }
+        @keyframes shimmer { to { background-position: 200% center; } }
+        .header h1 .shield { display: inline-block; animation: shieldFloat 3s ease-in-out infinite; -webkit-text-fill-color: initial; }
+        @keyframes shieldFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(5deg); }
+        }
+        .header p {
+            color: var(--text2); font-size: clamp(0.9em, 2vw, 1.1em);
+            margin-top: 12px; animation: slideDown 0.7s ease both 0.2s;
+            font-family: 'Space Mono', monospace; letter-spacing: 0.02em;
+        }
+
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideLeft { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* ─── CARD ─── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 40px rgba(0,0,0,0.4);
+            transition: box-shadow 0.4s ease, transform 0.4s ease;
+            animation: cardReveal 0.6s ease both;
+        }
+        @keyframes cardReveal {
+            from { opacity: 0; transform: translateY(30px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .card:hover { box-shadow: 0 8px 60px rgba(108,71,255,0.2), 0 4px 40px rgba(0,0,0,0.5); }
+        .card:nth-child(1) { animation-delay: 0.3s; }
+        .card:nth-child(2) { animation-delay: 0.45s; }
+        .card:nth-child(3) { animation-delay: 0.6s; }
+
+        .card-header {
+            background: linear-gradient(135deg, rgba(108,71,255,0.2) 0%, rgba(0,245,212,0.1) 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 28px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .card-header-icon {
+            width: 42px; height: 42px; border-radius: 12px;
+            background: rgba(108,71,255,0.2); display: flex; align-items: center; justify-content: center;
+            font-size: 1.2em; border: 1px solid var(--border);
+            transition: transform 0.3s, background 0.3s;
+        }
+        .card:hover .card-header-icon { transform: rotate(10deg) scale(1.1); background: rgba(108,71,255,0.35); }
+        .card-header-text h2 { font-size: 1.2em; font-weight: 700; color: var(--text); }
+        .card-header-text p { font-size: 0.8em; color: var(--text2); margin-top: 2px; font-family: 'Space Mono', monospace; }
+        .card-body { padding: 28px; }
+
+        /* ─── TABS ─── */
+        .feature-tabs {
+            display: flex; gap: 8px; margin-bottom: 28px;
+            background: var(--bg2); border-radius: 14px; padding: 6px;
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+        .feature-tab {
+            flex: 1; min-width: 140px;
+            padding: 12px 20px; background: transparent; border: none;
+            cursor: pointer; font-size: 0.9em; font-weight: 600;
+            color: var(--text2); transition: all 0.3s; border-radius: 10px;
+            font-family: 'Syne', sans-serif; position: relative; overflow: hidden;
+        }
+        .feature-tab::after {
+            content: ''; position: absolute; inset: 0; background: var(--primary);
+            opacity: 0; border-radius: 10px; transition: opacity 0.3s; z-index: -1;
+        }
+        .feature-tab:hover { color: var(--text); }
+        .feature-tab:hover::after { opacity: 0.1; }
+        .feature-tab.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white; box-shadow: 0 4px 20px rgba(108,71,255,0.4);
+        }
+        .feature-tab.active::after { opacity: 0; }
+
+        /* ─── SUB TABS ─── */
+        .sub-tabs {
+            display: flex; gap: 8px; margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .sub-tab {
+            padding: 9px 20px; background: var(--bg2);
+            border: 1px solid var(--border); border-radius: 10px;
+            cursor: pointer; font-size: 0.85em; font-weight: 600;
+            color: var(--text2); transition: all 0.3s; font-family: 'Syne', sans-serif;
+        }
+        .sub-tab:hover { border-color: var(--primary); color: var(--text); transform: translateY(-1px); }
+        .sub-tab.active { background: rgba(108,71,255,0.2); border-color: var(--primary); color: var(--accent); }
+
+        .feature-content { display: none; animation: tabReveal 0.4s ease; }
+        .feature-content.active { display: block; }
+        @keyframes tabReveal { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ─── FORM ─── */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 14px; margin-bottom: 24px;
+        }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label {
+            font-size: 0.78em; font-weight: 600; color: var(--text2);
+            margin-bottom: 6px; font-family: 'Space Mono', monospace;
+            letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;
+        }
+        .form-group label small { color: var(--text3); font-size: 0.85em; font-weight: 400; }
+        .form-group input {
+            padding: 11px 14px; background: var(--bg2);
+            border: 1px solid var(--border); border-radius: 10px;
+            font-size: 0.9em; transition: all 0.3s; color: var(--text);
+            font-family: 'Space Mono', monospace;
+        }
+        .form-group input:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(108,71,255,0.15), 0 0 15px rgba(108,71,255,0.1);
+            background: var(--surface2);
+        }
+        .form-group input:hover { border-color: rgba(108,71,255,0.5); }
+        .form-group input::placeholder { color: var(--text3); }
+
+        .csv-input {
+            width: 100%; padding: 14px; background: var(--bg2);
+            border: 1px solid var(--border); border-radius: 12px;
+            font-family: 'Space Mono', monospace; font-size: 0.85em;
+            resize: vertical; margin-bottom: 16px; color: var(--text);
+            transition: all 0.3s; min-height: 100px;
+        }
+        .csv-input:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(108,71,255,0.15);
+        }
+
+        /* ─── BUTTONS ─── */
+        .btn {
+            padding: 12px 26px; border: none; border-radius: 12px;
+            font-size: 0.9em; font-weight: 700; cursor: pointer;
+            transition: all 0.3s; margin-right: 8px; margin-bottom: 8px;
+            font-family: 'Syne', sans-serif; position: relative; overflow: hidden;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn::before {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 0; height: 0; background: rgba(255,255,255,0.15);
+            border-radius: 50%; transform: translate(-50%, -50%);
+            transition: width 0.5s, height 0.5s; z-index: 0;
+        }
+        .btn:active::before { width: 200%; height: 200%; }
+        .btn > * { position: relative; z-index: 1; }
+        .btn span { position: relative; z-index: 1; }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white; box-shadow: 0 4px 20px rgba(108,71,255,0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(108,71,255,0.5);
+        }
+        .btn-primary:active { transform: translateY(0); }
+
+        .btn-secondary {
+            background: var(--surface2); color: var(--text2);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { background: var(--bg3); color: var(--text); border-color: var(--primary); transform: translateY(-1px); }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00d68f 0%, #00a36c 100%);
+            color: white; box-shadow: 0 4px 15px rgba(0,214,143,0.3);
+            font-size: 0.82em; padding: 9px 16px;
+        }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,214,143,0.4); }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #c0003c 100%);
+            color: white; box-shadow: 0 4px 15px rgba(255,77,109,0.3);
+            font-size: 0.82em; padding: 9px 16px;
+        }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,77,109,0.4); }
+
+        .example-buttons {
+            display: flex; gap: 8px; flex-wrap: wrap;
+            margin-bottom: 20px; align-items: center;
+        }
+        .example-label {
+            font-size: 0.8em; font-weight: 700; color: var(--text3);
+            font-family: 'Space Mono', monospace; letter-spacing: 0.05em;
+            margin-right: 4px;
+        }
+
+        /* ─── LOADING ─── */
+        .loading { display: none; text-align: center; padding: 30px; }
+        .loading.visible { display: block; animation: fadeIn 0.3s ease; }
+        .scanner {
+            width: 70px; height: 70px; margin: 0 auto 16px;
+            position: relative;
+        }
+        .scanner-ring {
+            position: absolute; inset: 0; border-radius: 50%;
+            border: 2px solid transparent;
+        }
+        .scanner-ring:nth-child(1) {
+            border-top-color: var(--primary); border-right-color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+        .scanner-ring:nth-child(2) {
+            inset: 8px; border-bottom-color: var(--accent);
+            animation: spin 0.7s linear infinite reverse;
+        }
+        .scanner-ring:nth-child(3) {
+            inset: 16px; border-top-color: rgba(255,77,109,0.6);
+            animation: spin 1.3s linear infinite;
+        }
+        .scanner-dot {
+            position: absolute; top: 50%; left: 50%;
+            width: 10px; height: 10px; background: var(--accent);
+            border-radius: 50%; transform: translate(-50%, -50%);
+            animation: pulse 1s ease-in-out infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.5; } }
+        .loading-text {
+            color: var(--text2); font-family: 'Space Mono', monospace;
+            font-size: 0.85em; animation: textBlink 1.5s ease-in-out infinite;
+        }
+        @keyframes textBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* ─── RESULT ─── */
+        .result-card {
+            border-radius: 18px; padding: 30px;
+            text-align: center; margin-top: 24px;
+            border: 1px solid; position: relative; overflow: hidden;
+            animation: resultBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+        @keyframes resultBounce { from { opacity: 0; transform: scale(0.8) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .result-card::before {
+            content: ''; position: absolute; inset: 0; opacity: 0.08;
+            background: radial-gradient(circle at 50% 0%, white, transparent 70%);
+        }
+        .result-normal { background: rgba(0,214,143,0.1); border-color: rgba(0,214,143,0.4); }
+        .result-attack { background: rgba(255,77,109,0.1); border-color: rgba(255,77,109,0.4); }
+        .result-icon {
+            font-size: 3.5em; margin-bottom: 12px;
+            animation: iconEntrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both 0.2s;
+        }
+        @keyframes iconEntrance { from { transform: scale(0) rotate(-30deg); } to { transform: scale(1) rotate(0deg); } }
+        .result-title {
+            font-size: clamp(1.4em, 4vw, 2em); font-weight: 800;
+            letter-spacing: 0.05em; margin-bottom: 12px;
+            animation: slideUp 0.5s ease both 0.3s;
+        }
+        .result-normal .result-title { color: var(--success); }
+        .result-attack .result-title { color: var(--danger); animation: dangerFlicker 0.5s ease 0.8s 3; }
+        @keyframes dangerFlicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .result-confidence { font-size: 1.1em; margin-bottom: 8px; color: var(--text); animation: slideUp 0.5s ease both 0.4s; }
+        .result-score { font-size: 0.85em; color: var(--text2); font-family: 'Space Mono', monospace; animation: slideUp 0.5s ease both 0.5s; }
+        .result-action { margin-top: 16px; font-size: 0.9em; font-weight: 700; animation: slideUp 0.5s ease both 0.6s; }
+
+        /* Confidence Bar */
+        .confidence-bar-container { margin: 16px 0 8px; animation: slideUp 0.5s ease both 0.45s; }
+        .confidence-bar-label { display: flex; justify-content: space-between; font-size: 0.75em; color: var(--text2); margin-bottom: 6px; font-family: 'Space Mono', monospace; }
+        .confidence-bar-track { height: 8px; background: rgba(255,255,255,0.1); border-radius: 100px; overflow: hidden; }
+        .confidence-bar-fill {
+            height: 100%; border-radius: 100px; width: 0;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1) 0.7s;
+        }
+        .result-normal .confidence-bar-fill { background: linear-gradient(90deg, #00d68f, #00f5d4); box-shadow: 0 0 10px rgba(0,214,143,0.5); }
+        .result-attack .confidence-bar-fill { background: linear-gradient(90deg, var(--danger), #ff8fa3); box-shadow: 0 0 10px rgba(255,77,109,0.5); }
+
+        /* ─── ERROR ─── */
+        .error-msg {
+            background: rgba(255,77,109,0.1); color: #ff8fa3;
+            padding: 14px 18px; border-radius: 12px; margin-top: 16px;
+            display: none; border: 1px solid rgba(255,77,109,0.3);
+            font-family: 'Space Mono', monospace; font-size: 0.85em;
+            animation: shakeIn 0.5s ease;
+        }
+        @keyframes shakeIn {
+            0% { transform: translateX(-10px); } 20% { transform: translateX(10px); }
+            40% { transform: translateX(-6px); } 60% { transform: translateX(6px); }
+            80% { transform: translateX(-3px); } 100% { transform: translateX(0); }
+        }
+        .error-msg.visible { display: block; }
+
+        /* ─── METRICS ─── */
+        .performance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+        }
+        .metric-card {
+            background: var(--bg2); border: 1px solid var(--border);
+            padding: 22px 16px; border-radius: 16px; text-align: center;
+            transition: all 0.4s; cursor: default; position: relative; overflow: hidden;
+        }
+        .metric-card::before {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transform: scaleX(0); transition: transform 0.4s; transform-origin: left;
+        }
+        .metric-card:hover { transform: translateY(-5px) scale(1.02); border-color: var(--primary); box-shadow: var(--glow); }
+        .metric-card:hover::before { transform: scaleX(1); }
+        .metric-value {
+            font-size: 2em; font-weight: 800; font-family: 'Space Mono', monospace;
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+            display: block; transition: transform 0.3s;
+        }
+        .metric-card:hover .metric-value { transform: scale(1.1); }
+        .metric-label { color: var(--text2); font-size: 0.8em; font-weight: 600; margin-top: 6px; letter-spacing: 0.05em; }
+
+        /* ─── GRAPHS ─── */
+        .graphs-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .graph-card {
+            background: var(--bg2); border: 1px solid var(--border);
+            border-radius: 16px; overflow: hidden;
+            transition: all 0.4s; position: relative;
+        }
+        .graph-card:hover { transform: translateY(-6px); box-shadow: 0 12px 40px rgba(108,71,255,0.25); border-color: rgba(108,71,255,0.5); }
+        .graph-card-header {
+            background: linear-gradient(135deg, rgba(108,71,255,0.2), rgba(0,245,212,0.1));
+            padding: 12px 16px; font-size: 0.85em; font-weight: 700;
+            color: var(--text); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .graph-card .img-container { padding: 16px; background: var(--bg2); }
+        .graph-card img {
+            width: 100%; height: auto; display: block; cursor: pointer;
+            border-radius: 8px; transition: transform 0.4s, filter 0.4s;
+            filter: brightness(0.9) saturate(1.1);
+        }
+        .graph-card:hover img { transform: scale(1.02); filter: brightness(1) saturate(1.3); }
+        .graph-zoom-hint {
+            position: absolute; bottom: 12px; right: 12px;
+            background: rgba(108,71,255,0.8); color: white; font-size: 0.7em;
+            padding: 4px 10px; border-radius: 20px; opacity: 0; transition: opacity 0.3s;
+            font-family: 'Space Mono', monospace;
+        }
+        .graph-card:hover .graph-zoom-hint { opacity: 1; }
+
+        /* ─── 4G / 5G NETWORK IDS ─── */
+        .network-mode-panel {
+            background: var(--bg2); border: 1px solid var(--border);
+            border-radius: 16px; padding: 18px; margin-bottom: 22px;
+        }
+        .network-mode-header {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 14px; flex-wrap: wrap; margin-bottom: 14px;
+        }
+        .network-mode-title strong { display: block; font-size: 0.95em; }
+        .network-mode-title span {
+            color: var(--text2); font-size: 0.78em; font-family: 'Space Mono', monospace;
+        }
+        .network-toggle {
+            display: inline-flex; gap: 6px; background: var(--surface);
+            border: 1px solid var(--border); border-radius: 12px; padding: 5px;
+        }
+        .network-btn {
+            border: 0; border-radius: 9px; color: var(--text2); cursor: pointer;
+            background: transparent; padding: 9px 16px; font-weight: 800;
+            font-family: 'Syne', sans-serif; transition: all 0.25s;
+        }
+        .network-btn.active {
+            color: #fff; background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            box-shadow: 0 4px 18px rgba(108,71,255,0.35);
+        }
+        .network-profile-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        .network-profile-tile {
+            border: 1px solid rgba(108,71,255,0.2); background: rgba(255,255,255,0.03);
+            border-radius: 12px; padding: 12px;
+        }
+        .network-profile-tile span {
+            display: block; color: var(--text3); font-size: 0.7em;
+            font-family: 'Space Mono', monospace; margin-bottom: 5px;
+        }
+        .network-profile-tile strong { font-size: 0.9em; color: var(--accent); }
+        .network-insight {
+            margin-top: 16px; padding: 18px; border-radius: 16px;
+            border: 1px solid var(--border); background: rgba(13,15,28,0.78);
+            display: none;
+        }
+        .network-insight.visible { display: block; animation: slideUp 0.4s ease both; }
+        .network-insight-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+            gap: 10px; margin: 14px 0;
+        }
+        .network-insight-kpi {
+            background: var(--surface2); border: 1px solid rgba(108,71,255,0.2);
+            border-radius: 12px; padding: 12px;
+        }
+        .network-insight-kpi span {
+            color: var(--text3); display: block; font-family: 'Space Mono', monospace;
+            font-size: 0.68em; margin-bottom: 4px;
+        }
+        .network-insight-kpi strong { font-size: 1.1em; color: var(--text); }
+        .diagram-grid {
+            display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 20px;
+            align-items: stretch;
+        }
+        .network-diagram {
+            min-height: 280px; padding: 20px; background: var(--bg2);
+            border: 1px solid var(--border); border-radius: 16px;
+        }
+        .network-flow {
+            display: grid; grid-template-columns: repeat(6, minmax(80px, 1fr));
+            gap: 10px; align-items: center; margin: 18px 0;
+        }
+        .network-node {
+            min-height: 72px; border: 1px solid rgba(0,245,212,0.28);
+            border-radius: 14px; background: rgba(0,245,212,0.06);
+            display: flex; align-items: center; justify-content: center;
+            text-align: center; padding: 10px; font-weight: 800; font-size: 0.82em;
+            position: relative;
+        }
+        .network-node:not(:last-child)::after {
+            content: ''; position: absolute; top: 50%; right: -10px;
+            width: 10px; height: 2px; background: var(--accent);
+            box-shadow: 0 0 12px rgba(0,245,212,0.7);
+        }
+        .network-node.alert {
+            border-color: rgba(255,77,109,0.55); background: rgba(255,77,109,0.1);
+        }
+        .chart-bars { margin-top: 18px; }
+        .chart-row {
+            display: grid; grid-template-columns: 120px 1fr 54px; gap: 10px;
+            align-items: center; margin: 10px 0; font-family: 'Space Mono', monospace;
+            font-size: 0.78em; color: var(--text2);
+        }
+        .chart-track { height: 10px; border-radius: 100px; background: rgba(255,255,255,0.08); overflow: hidden; }
+        .chart-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--accent), var(--primary)); width: 0; transition: width 0.8s ease; }
+        .threat-pills {
+            display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;
+        }
+        .threat-pill {
+            border: 1px solid rgba(108,71,255,0.28); background: rgba(108,71,255,0.1);
+            border-radius: 999px; padding: 7px 11px; color: var(--text2);
+            font-size: 0.78em; font-family: 'Space Mono', monospace;
+        }
+
+        /* ─── SOC ALERT CONSOLE ─── */
+        .soc-toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px; flex-wrap: wrap; margin-bottom: 18px;
+        }
+        .soc-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+        .soc-select {
+            background: var(--bg2); border: 1px solid var(--border);
+            color: var(--text); border-radius: 10px; padding: 10px 12px;
+            font-family: 'Space Mono', monospace; font-size: 0.78em;
+        }
+        .soc-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px; margin-bottom: 16px;
+        }
+        .soc-stat {
+            background: var(--bg2); border: 1px solid var(--border);
+            border-radius: 14px; padding: 14px;
+        }
+        .soc-stat span {
+            display: block; color: var(--text3); font-size: 0.68em;
+            font-family: 'Space Mono', monospace; margin-bottom: 4px;
+        }
+        .soc-stat strong {
+            color: var(--accent); font-size: 1.45em; font-family: 'Space Mono', monospace;
+        }
+        .alert-table-wrap {
+            border: 1px solid var(--border); border-radius: 16px;
+            overflow: hidden; background: var(--bg2);
+        }
+        .alert-table { width: 100%; border-collapse: collapse; font-size: 0.84em; }
+        .alert-table th {
+            text-align: left; background: rgba(108,71,255,0.16);
+            color: var(--text2); padding: 12px; font-family: 'Space Mono', monospace;
+            font-size: 0.75em;
+        }
+        .alert-table td {
+            padding: 12px; border-top: 1px solid rgba(108,71,255,0.16);
+            color: var(--text2); vertical-align: top;
+        }
+        .severity-pill {
+            display: inline-block; border-radius: 999px; padding: 4px 9px;
+            font-family: 'Space Mono', monospace; font-size: 0.72em; font-weight: 800;
+        }
+        .sev-critical { color: #ff8fa3; background: rgba(255,77,109,0.16); border: 1px solid rgba(255,77,109,0.36); }
+        .sev-high { color: #ffcf75; background: rgba(255,190,0,0.14); border: 1px solid rgba(255,190,0,0.34); }
+        .sev-medium { color: #ffe199; background: rgba(255,190,0,0.1); border: 1px solid rgba(255,190,0,0.24); }
+        .sev-informational { color: var(--accent); background: rgba(0,245,212,0.1); border: 1px solid rgba(0,245,212,0.28); }
+        .empty-alerts {
+            padding: 22px; text-align: center; color: var(--text3);
+            font-family: 'Space Mono', monospace; font-size: 0.82em;
+        }
+        .attack-type-panel {
+            margin-top: 16px; padding: 14px; border-radius: 14px;
+            background: rgba(13,15,28,0.82); border: 1px solid var(--border);
+            text-align: left;
+        }
+        .attack-type-panel strong { color: var(--accent); }
+        .attack-type-panel p {
+            color: var(--text2); font-size: 0.86em; line-height: 1.55; margin-top: 8px;
+        }
+        .attack-evidence {
+            display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px;
+        }
+        .attack-evidence span {
+            border: 1px solid rgba(0,245,212,0.22); background: rgba(0,245,212,0.07);
+            border-radius: 999px; padding: 5px 9px; color: var(--text2);
+            font-size: 0.72em; font-family: 'Space Mono', monospace;
+        }
+
+        /* ─── IP REPUTATION ─── */
+        .ip-input-group { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; }
+        .ip-input-group input { flex: 1; min-width: 200px; }
+
+        .risk-display {
+            text-align: center; padding: 24px 0 16px;
+        }
+        .risk-number {
+            font-size: 4.5em; font-weight: 800; font-family: 'Space Mono', monospace;
+            line-height: 1; display: block;
+            animation: countUp 1s ease both;
+        }
+        @keyframes countUp { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+        .risk-label { font-size: 0.9em; color: var(--text2); margin-top: 6px; font-family: 'Space Mono', monospace; }
+        .risk-badge {
+            display: inline-block; padding: 6px 18px; border-radius: 100px;
+            font-size: 0.85em; font-weight: 700; margin-top: 12px;
+            border: 1px solid; animation: slideUp 0.5s ease both 0.4s;
+        }
+
+        .info-box, .warning-box, .critical-box {
+            padding: 14px 18px; border-radius: 12px; margin-top: 14px;
+            border-left: 3px solid; font-size: 0.88em; line-height: 1.6;
+            animation: slideLeft 0.5s ease both;
+        }
+        .info-box { background: rgba(108,71,255,0.08); border-color: var(--primary); color: var(--text); }
+        .warning-box { background: rgba(255,190,0,0.08); border-color: var(--warning); color: var(--text); }
+        .critical-box { background: rgba(255,77,109,0.08); border-color: var(--danger); color: var(--text); }
+
+        .intel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 16px 0; }
+        .intel-card {
+            background: var(--surface2); padding: 16px; border-radius: 12px;
+            border: 1px solid var(--border);
+            animation: slideUp 0.5s ease both;
+        }
+        .intel-card strong { color: var(--accent); font-size: 0.85em; display: block; margin-bottom: 8px; font-family: 'Space Mono', monospace; }
+        .intel-card p { color: var(--text2); font-size: 0.85em; line-height: 1.7; }
+
+        .reasons-list { list-style: none; }
+        .reasons-list li {
+            padding: 8px 0; border-bottom: 1px solid var(--border);
+            font-size: 0.88em; color: var(--text2); display: flex; align-items: flex-start; gap: 10px;
+            animation: slideLeft 0.4s ease both;
+        }
+        .reasons-list li:last-child { border-bottom: none; }
+        .reasons-list li::before { content: '›'; color: var(--primary); font-size: 1.2em; flex-shrink: 0; }
+
+        /* ─── MODAL ─── */
+        .modal {
+            display: none; position: fixed; z-index: 9999; inset: 0;
+            background: rgba(0,0,0,0); cursor: pointer; backdrop-filter: blur(0);
+            transition: background 0.3s, backdrop-filter 0.3s;
+            align-items: center; justify-content: center;
+        }
+        .modal.open {
+            display: flex; background: rgba(0,0,0,0.92);
+            backdrop-filter: blur(8px); animation: modalOpen 0.3s ease;
+        }
+        @keyframes modalOpen { from { opacity: 0; } to { opacity: 1; } }
+        .modal-content {
+            max-width: 90vw; max-height: 90vh; border-radius: 16px;
+            box-shadow: 0 0 80px rgba(108,71,255,0.4);
+            animation: modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes modalPop { from { transform: scale(0.7) rotate(-2deg); opacity: 0; } to { transform: scale(1) rotate(0deg); opacity: 1; } }
+        .close-modal {
+            position: fixed; top: 20px; right: 28px;
+            color: white; font-size: 36px; cursor: pointer;
+            width: 46px; height: 46px; background: rgba(255,255,255,0.1);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s; line-height: 1; border: 1px solid rgba(255,255,255,0.2);
+        }
+        .close-modal:hover { background: rgba(255,77,109,0.5); transform: rotate(90deg) scale(1.1); }
+
+        /* ─── SECTION TITLE ─── */
+        .section-description {
+            color: var(--text2); font-size: 0.88em; margin-bottom: 20px;
+            font-family: 'Space Mono', monospace; line-height: 1.6;
+            padding: 12px 16px; background: var(--bg2); border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+        .section-description small { display: block; color: var(--text3); margin-top: 6px; font-size: 0.9em; }
+
+        /* ─── STATUS BAR ─── */
+        .status-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 20px; background: var(--bg2); border-bottom: 1px solid var(--border);
+            font-family: 'Space Mono', monospace; font-size: 0.75em; color: var(--text3);
+            flex-wrap: wrap; gap: 8px;
+        }
+        .status-item { display: flex; align-items: center; gap: 6px; }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: blink 2s infinite; }
+        .status-dot.warning { background: var(--warning); }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 768px) {
+            .header { padding: 40px 16px 28px; }
+            .card-body { padding: 20px 16px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .graphs-grid { grid-template-columns: 1fr; }
+            .feature-tabs { gap: 4px; }
+            .feature-tab { min-width: 100%; text-align: center; }
+            .performance-grid { grid-template-columns: repeat(2, 1fr); }
+            .ip-input-group { flex-direction: column; }
+            .ip-input-group .btn { width: 100%; justify-content: center; }
+            .btn { width: 100%; justify-content: center; margin-right: 0; }
+            .example-buttons { flex-direction: column; }
+            .example-buttons .btn { width: 100%; }
+            .intel-grid { grid-template-columns: 1fr; }
+            .diagram-grid { grid-template-columns: 1fr; }
+            .network-flow { grid-template-columns: 1fr; }
+            .network-node:not(:last-child)::after {
+                top: auto; bottom: -10px; left: 50%; right: auto;
+                width: 2px; height: 10px;
+            }
+            .network-toggle { width: 100%; }
+            .network-btn { flex: 1; }
+            .alert-table { min-width: 760px; }
+            .alert-table-wrap { overflow-x: auto; }
+        }
+        @media (max-width: 480px) {
+            .performance-grid { grid-template-columns: 1fr 1fr; }
+            .metric-value { font-size: 1.6em; }
+        }
+        @media (min-width: 1024px) {
+            .form-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+
+        /* ─── SCROLL REVEAL ─── */
+        .reveal { opacity: 0; transform: translateY(25px); transition: opacity 0.6s ease, transform 0.6s ease; }
+        .reveal.revealed { opacity: 1; transform: translateY(0); }
+
+        /* ─── FOOTER ─── */
+        .footer {
+            text-align: center; padding: 30px 20px;
+            color: var(--text3); font-size: 0.75em;
+            font-family: 'Space Mono', monospace; border-top: 1px solid var(--border);
+            margin-top: 20px;
+        }
+
+        /* ─── TOOLTIP ─── */
+        .tooltip-wrap { position: relative; }
+        .tooltip-wrap::after {
+            content: attr(data-tip); position: absolute; bottom: calc(100% + 8px);
+            left: 50%; transform: translateX(-50%); background: var(--surface2);
+            color: var(--text); font-size: 0.75em; padding: 6px 10px; border-radius: 8px;
+            white-space: nowrap; border: 1px solid var(--border); pointer-events: none;
+            opacity: 0; transition: opacity 0.2s; z-index: 100;
+            font-family: 'Space Mono', monospace;
+        }
+        .tooltip-wrap:hover::after { opacity: 1; }
+
+        /* ─── STAGGER ANIMATIONS for metric cards ─── */
+        .metric-card:nth-child(1) { animation: cardReveal 0.5s ease both 0.5s; }
+        .metric-card:nth-child(2) { animation: cardReveal 0.5s ease both 0.6s; }
+        .metric-card:nth-child(3) { animation: cardReveal 0.5s ease both 0.7s; }
+        .metric-card:nth-child(4) { animation: cardReveal 0.5s ease both 0.8s; }
+        .metric-card:nth-child(5) { animation: cardReveal 0.5s ease both 0.9s; }
+
+        /* graph cards stagger */
+        .graph-card:nth-child(1) { animation: cardReveal 0.5s ease both 0.1s; }
+        .graph-card:nth-child(2) { animation: cardReveal 0.5s ease both 0.2s; }
+        .graph-card:nth-child(3) { animation: cardReveal 0.5s ease both 0.3s; }
+        .graph-card:nth-child(4) { animation: cardReveal 0.5s ease both 0.4s; }
+        .graph-card:nth-child(5) { animation: cardReveal 0.5s ease both 0.5s; }
+        .graph-card:nth-child(6) { animation: cardReveal 0.5s ease both 0.6s; }
+        .graph-card:nth-child(7) { animation: cardReveal 0.5s ease both 0.7s; }
+        .graph-card:nth-child(8) { animation: cardReveal 0.5s ease both 0.8s; }
+
+        /* scan line effect on result */
+        .result-card::after {
+            content: ''; position: absolute; top: -100%; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: scanLine 2s ease 0.8s 2;
+        }
+        @keyframes scanLine { 0% { top: -10%; } 100% { top: 110%; } }
+    </style>
+</head>
+<body>
+
+    <!-- Animated BG -->
+    <div class="bg-canvas"></div>
+    <div class="grid-overlay"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-badge">SYSTEM ONLINE · AI MODEL ACTIVE</div>
+            <h1><span class="shield">🛡️</span> AEGIS 5G</h1>
+            <p>Privacy-Preserving AI-Powered Network Security for 5G Networks</p>
+        </div>
+
+        <!-- Security Tools Card -->
+        <div class="card">
+            <div class="status-bar">
+                <div class="status-item"><div class="status-dot"></div> Model: best_5g_ids_model.h5 · Loaded</div>
+                <div class="status-item"><div class="status-dot"></div> 20 Features Active</div>
+                <div class="status-item"><div class="status-dot warning"></div> Real-time Analysis</div>
+            </div>
+            <div class="card-header">
+                <div class="card-header-icon">🔧</div>
+                <div class="card-header-text">
+                    <h2>Security Tools</h2>
+                    <p>SELECT A SECURITY FEATURE TO ANALYZE</p>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="feature-tabs">
+                    <button class="feature-tab active" onclick="switchFeature('ip_reputation', this)">🌐 IP Reputation Check</button>
+                    <button class="feature-tab" onclick="switchFeature('network_traffic', this)">🔍 Network Traffic Analysis</button>
+                </div>
+
+                <!-- IP Reputation Content -->
+                <div id="ip_reputation_content" class="feature-content active">
+                    <div class="section-description">
+                        Check if an IP address is malicious using threat intelligence and AI analysis.
+                        <small>Powered by AbuseIPDB · Gemini AI · Port Scanning</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="reputation_ip">IP ADDRESS TO CHECK</label>
+                        <div class="ip-input-group">
+                            <input type="text" id="reputation_ip" placeholder="e.g., 8.8.8.8 or 185.130.5.253"
+                                onkeypress="if(event.key==='Enter') checkIPReputation()">
+                            <button onclick="checkIPReputation()" class="btn btn-primary">
+                                <span>🔍</span><span>Check Reputation</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="reputation_result" style="display: none; margin-top: 1.5rem;"></div>
+                </div>
+
+                <!-- Network Traffic Content -->
+                <div id="network_traffic_content" class="feature-content">
+                    <div class="network-mode-panel">
+                        <div class="network-mode-header">
+                            <div class="network-mode-title">
+                                <strong>Network Generation IDS Mode</strong>
+                                <span>Compare the same IDS model behavior across 4G EPC and 5G core traffic paths</span>
+                            </div>
+                            <div class="network-toggle" aria-label="Network generation selector">
+                                <button class="network-btn" id="network4gBtn" onclick="setNetworkMode('4g', this)">4G LTE</button>
+                                <button class="network-btn active" id="network5gBtn" onclick="setNetworkMode('5g', this)">5G SA</button>
+                            </div>
+                        </div>
+                        <div class="network-profile-grid" id="networkProfileGrid"></div>
+                    </div>
+
+                    <div class="sub-tabs">
+                        <button class="sub-tab active" onclick="switchSubTab('manual', this)">📝 Manual Entry</button>
+                        <button class="sub-tab" onclick="switchSubTab('csv', this)">📋 CSV Input</button>
+                    </div>
+
+                    <div id="manual-subtab">
+                        <div class="example-buttons">
+                            <span class="example-label">⚡ QUICK EXAMPLES:</span>
+                            <button class="btn btn-success" onclick="loadExample('normal_1')"><span>✅</span><span>Normal Traffic</span></button>
+                            <button class="btn btn-success" onclick="loadExample('normal_2')"><span>✅</span><span>Normal Video</span></button>
+                            <button class="btn btn-danger" onclick="loadExample('attack_1')"><span>⚠️</span><span>UDP Flood</span></button>
+                            <button class="btn btn-danger" onclick="loadExample('attack_2')"><span>⚠️</span><span>SYN Flood</span></button>
+                            <button class="btn btn-secondary" onclick="clearForm()"><span>🗑️</span><span>Clear All</span></button>
+                        </div>
+                        <form id="manual-form">
+                            <div class="form-grid" id="features-grid"></div>
+                            <button type="submit" class="btn btn-primary"><span>🔍</span><span>Detect Intrusion</span></button>
+                        </form>
+                    </div>
+
+                    <div id="csv-subtab" style="display:none;">
+                        <div class="section-description">
+                            Enter 20 comma-separated values in exact order:
+                            <small>Offset, sMeanPktSz, sTtl, sHops, TcpRtt, State, AckDat, SynAck, Proto, SrcBytes, TotBytes, SrcRate, Max, Load, Dur, SrcLoad, Rate, RunTime, Cause, Min</small>
+                        </div>
+                        <textarea id="csv-values" class="csv-input" rows="4"
+                            placeholder="175604.0,245.5,64.0,0.0,0.0,5.0,100.0,50.0,1.0,50000.0,100000.0,1000.0,1500.0,0.5,10.0,0.5,1000.0,10.0,0.0,64.0"></textarea>
+                        <div class="example-buttons">
+                            <button class="btn btn-success" onclick="loadCSVExample('normal_1')"><span>✅</span><span>Normal Example</span></button>
+                            <button class="btn btn-danger" onclick="loadCSVExample('attack_1')"><span>⚠️</span><span>Attack Example</span></button>
+                            <button class="btn btn-secondary" onclick="clearCSV()"><span>🗑️</span><span>Clear</span></button>
+                        </div>
+                        <button class="btn btn-primary" onclick="predictCSV()"><span>🔍</span><span>Detect Intrusion</span></button>
+                    </div>
+
+                    <div id="loading" class="loading">
+                        <div class="scanner">
+                            <div class="scanner-ring"></div>
+                            <div class="scanner-ring"></div>
+                            <div class="scanner-ring"></div>
+                            <div class="scanner-dot"></div>
+                        </div>
+                        <div class="loading-text">Analyzing network traffic...</div>
+                    </div>
+
+                    <div id="error" class="error-msg"></div>
+                    <div id="result" style="display: none;"></div>
+                    <div id="networkInsight" class="network-insight"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics Card -->
+        <div class="card reveal">
+            <div class="card-header">
+                <div class="card-header-icon">📊</div>
+                <div class="card-header-text">
+                    <h2>Model Performance Metrics</h2>
+                    <p>BASED ON 2002 BALANCED SAMPLES (1001 NORMAL + 1001 ATTACK)</p>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="performance-grid">
+                    <div class="metric-card tooltip-wrap" data-tip="Overall classification accuracy">
+                        <span class="metric-value">97.5%</span>
+                        <div class="metric-label">Accuracy</div>
+                    </div>
+                    <div class="metric-card tooltip-wrap" data-tip="True positive rate among positives">
+                        <span class="metric-value">95.2%</span>
+                        <div class="metric-label">Precision</div>
+                    </div>
+                    <div class="metric-card tooltip-wrap" data-tip="Attack detection rate">
+                        <span class="metric-value">100%</span>
+                        <div class="metric-label">Recall</div>
+                    </div>
+                    <div class="metric-card tooltip-wrap" data-tip="Harmonic mean of Precision & Recall">
+                        <span class="metric-value">97.6%</span>
+                        <div class="metric-label">F1-Score</div>
+                    </div>
+                    <div class="metric-card tooltip-wrap" data-tip="Area under ROC curve">
+                        <span class="metric-value">99.6%</span>
+                        <div class="metric-label">ROC-AUC</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SOC Alert Console -->
+        <div class="card reveal">
+            <div class="card-header">
+                <div class="card-header-icon">🛡️</div>
+                <div class="card-header-text">
+                    <h2>Live SOC Alert Console</h2>
+                    <p>RECENT IDS EVENTS · FILTER · EXPORT · RESPONSE GUIDANCE</p>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="soc-toolbar">
+                    <div class="soc-filters">
+                        <select class="soc-select" id="alertSeverityFilter" onchange="refreshAlerts()">
+                            <option value="">All Severities</option>
+                            <option value="Critical">Critical</option>
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Informational">Informational</option>
+                        </select>
+                        <select class="soc-select" id="alertNetworkFilter" onchange="refreshAlerts()">
+                            <option value="">All Networks</option>
+                            <option value="4g">4G LTE</option>
+                            <option value="5g">5G SA</option>
+                        </select>
+                        <select class="soc-select" id="alertAttackFilter" onchange="refreshAlerts()">
+                            <option value="">All Attack Types</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="refreshAlerts()"><span>↻</span><span>Refresh</span></button>
+                        <button class="btn btn-secondary" onclick="exportAlerts()"><span>⬇</span><span>Export JSON</span></button>
+                        <button class="btn btn-danger" onclick="clearAlerts()"><span>×</span><span>Clear</span></button>
+                    </div>
+                </div>
+                <div class="soc-grid" id="socStats"></div>
+                <div class="alert-table-wrap" id="alertTableWrap">
+                    <div class="empty-alerts">No alerts yet. Run an IP reputation check or network traffic detection.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphs Card (hidden initially) -->
+        <div class="card reveal" id="graphsCard" style="display: none;">
+            <div class="card-header">
+                <div class="card-header-icon">📈</div>
+                <div class="card-header-text">
+                    <h2>Model Visualization & Analysis</h2>
+                    <p>CLICK ANY GRAPH TO ENLARGE</p>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="graphs-grid">
+                    <div class="graph-card" style="grid-column: 1 / -1;">
+                        <div class="graph-card-header">🛰️ 4G / 5G IDS Working Diagram</div>
+                        <div class="network-diagram" id="networkDiagram">
+                            <div class="section-description" style="margin-bottom: 14px;">
+                                Run a traffic detection to draw the selected network path and IDS decision points.
+                            </div>
+                            <div class="network-flow" id="networkFlow"></div>
+                            <div class="threat-pills" id="networkThreatPills"></div>
+                        </div>
+                    </div>
+                    <div class="graph-card" style="grid-column: 1 / -1;">
+                        <div class="graph-card-header">📡 Live 4G / 5G IDS Telemetry Chart</div>
+                        <div class="network-diagram">
+                            <div class="diagram-grid">
+                                <div>
+                                    <div class="chart-bars" id="networkChartBars"></div>
+                                </div>
+                                <div class="info-box" id="networkChartSummary" style="margin-top:0;">
+                                    Select 4G or 5G mode, then run an IDS detection to compare latency, traffic load, anomaly pressure, and slice/core risk.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="graph-card">
+                        <div class="graph-card-header">📊 Confusion Matrix</div>
+                        <div class="img-container"><img src="/images/confusion_matrix.png" alt="Confusion Matrix" onclick="openModal(this.src)" onerror="this.src='https://via.placeholder.com/500x400/181a2e/6c47ff?text=Confusion+Matrix'"></div>
+                        <div class="graph-zoom-hint">Click to zoom</div>
+                    </div>
+                    <div class="graph-card">
+                        <div class="graph-card-header">📈 ROC Curve (AUC: 0.996)</div>
+                        <div class="img-container"><img src="/images/roc_curve.png" alt="ROC Curve" onclick="openModal(this.src)" onerror="this.src='https://via.placeholder.com/500x400/181a2e/6c47ff?text=ROC+Curve'"></div>
+                        <div class="graph-zoom-hint">Click to zoom</div>
+                    </div>
+                    <div class="graph-card">
+                        <div class="graph-card-header">🎯 Precision-Recall Curve</div>
+                        <div class="img-container"><img src="/images/precision_recall_curve.png" alt="Precision-Recall Curve" onclick="openModal(this.src)" onerror="this.src='https://via.placeholder.com/500x400/181a2e/6c47ff?text=Precision+Recall'"></div>
+                        <div class="graph-zoom-hint">Click to zoom</div>
+                    </div>
+                    <div class="graph-card">
+                        <div class="graph-card-header">📋 Classification Report</div>
+                        <div class="img-container"><img src="/images/classification_report.png" alt="Classification Report" onclick="openModal(this.src)" onerror="this.src='https://via.placeholder.com/500x400/181a2e/6c47ff?text=Classification+Report'"></div>
+                        <div class="graph-zoom-hint">Click to zoom</div>
+                    </div>
+                    <div class="graph-card">
+                        <div class="graph-card-header">⭐ Feature Importance</div>
+                        <div class="img-container"><img src="/images/feature_importance.png" alt="Feature Importance" onclick="openModal(this.src)" onerror="this.src='https://via.placeholder.com/500x400/181a2e/6c47ff?text=Feature+Importance'"></div>
+                        <div class="graph-zoom-hint">Click to zoom</div>
+                    </div>
+                    <div class="graph-card">
+                        <div class="graph-card-header">📊 Model Comparison</div>
+                        <div class="img-container"><img src="/images/model_comparison_barchart.png" alt="Model Comparison" onclick="openModal(this.src)" onerror="this.src='https://via.placeholder.com/500x400/181a2e/6c47ff?text=Model+Comparison'"></div>
+                        <div class="graph-zoom-hint">Click to zoom</div>
+                    </div>
+                    <div class="graph-card">
+                        <div class="graph-card-header">📉 Training History</div>
+                        <div class="img-container"><img src="/images/training_history.png" alt="Training History" onclick="openModal(this.src)" onerror="this.src='https://via.placeholder.com/500x400/181a2e/6c47ff?text=Training+History'"></div>
+                        <div class="graph-zoom-hint">Click to zoom</div>
+                    </div>
+                    <div class="graph-card">
+                        <div class="graph-card-header">⚖️ Class Balance</div>
+                        <div class="img-container"><img src="/images/class_balance_comparison.png" alt="Class Balance" onclick="openModal(this.src)" onerror="this.src='https://via.placeholder.com/500x400/181a2e/6c47ff?text=Class+Balance'"></div>
+                        <div class="graph-zoom-hint">Click to zoom</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            AEGIS 5G · PRIVACY-PRESERVING INTRUSION DETECTION · YENEPOYA INTERNSHIP PROJECT
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="imageModal" class="modal" onclick="closeModal()">
+        <span class="close-modal" onclick="closeModal()">×</span>
+        <img class="modal-content" id="modalImage">
+    </div>
+
+    <!-- Particles -->
+    <script>
+        // Generate floating particles
+        for (let i = 0; i < 18; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            const size = Math.random() * 4 + 1;
+            const colors = ['rgba(108,71,255,0.4)', 'rgba(0,245,212,0.3)', 'rgba(255,77,109,0.2)'];
+            p.style.cssText = `
+                width: ${size}px; height: ${size}px;
+                left: ${Math.random() * 100}%;
+                background: ${colors[Math.floor(Math.random() * colors.length)]};
+                animation-duration: ${Math.random() * 20 + 15}s;
+                animation-delay: ${Math.random() * 20}s;
+            `;
+            document.body.appendChild(p);
+        }
+    </script>
+
+    <script>
+        const featureNames = {{ features | tojson }};
+        const featureDescriptions = {{ descriptions | tojson }};
+        const examples = {{ examples | tojson }};
+        let selectedNetwork = '5g';
+        let networkProfiles = {};
+        let attackCategories = {};
+        let latestAlerts = [];
+
+        const fallbackProfiles = {
+            '4g': {
+                label: '4G LTE IDS Mode', core: 'EPC', radio: 'eNodeB',
+                latency_ms: '35-60', throughput_mbps: '75-150',
+                control_plane: 'MME / S-GW / P-GW',
+                ids_focus: ['S1-U inspection', 'GTP tunnel detection', 'EPC flood monitoring']
+            },
+            '5g': {
+                label: '5G Standalone IDS Mode', core: '5GC', radio: 'gNodeB',
+                latency_ms: '5-20', throughput_mbps: '500-1000+',
+                control_plane: 'AMF / SMF / UPF',
+                ids_focus: ['N3/N6 inspection', 'UPF behavior profiling', 'Slice isolation alerts']
+            }
+        };
+
+        function setNetworkMode(mode, btn) {
+            selectedNetwork = mode;
+            document.querySelectorAll('.network-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderNetworkProfile();
+            const insight = document.getElementById('networkInsight');
+            if (insight.dataset.lastValues) {
+                const values = JSON.parse(insight.dataset.lastValues);
+                const probability = parseFloat(insight.dataset.lastProbability || '0');
+                fetchNetworkContext(values, probability).then(renderNetworkContext).catch(() => {});
+            }
+        }
+
+        async function loadNetworkProfiles() {
+            try {
+                const res = await fetch('/network_profiles');
+                networkProfiles = await res.json();
+            } catch (err) {
+                networkProfiles = fallbackProfiles;
+            }
+            renderNetworkProfile();
+            renderEmptyNetworkDiagram();
+        }
+
+        async function loadAttackCategories() {
+            try {
+                const res = await fetch('/attack_categories');
+                attackCategories = await res.json();
+            } catch (err) {
+                attackCategories = {};
+            }
+            const select = document.getElementById('alertAttackFilter');
+            if (!select) return;
+            const current = select.value;
+            const options = Object.entries(attackCategories)
+                .filter(([key]) => key !== 'normal')
+                .map(([key, category]) => `<option value="${key}">${category.label}</option>`)
+                .join('');
+            select.innerHTML = `<option value="">All Attack Types</option>${options}`;
+            select.value = current;
+        }
+
+        function renderNetworkProfile() {
+            const profile = networkProfiles[selectedNetwork] || fallbackProfiles[selectedNetwork];
+            const grid = document.getElementById('networkProfileGrid');
+            if (!grid || !profile) return;
+            grid.innerHTML = `
+                <div class="network-profile-tile"><span>RADIO ACCESS</span><strong>${profile.radio}</strong></div>
+                <div class="network-profile-tile"><span>CORE NETWORK</span><strong>${profile.core}</strong></div>
+                <div class="network-profile-tile"><span>LATENCY</span><strong>${profile.latency_ms} ms</strong></div>
+                <div class="network-profile-tile"><span>THROUGHPUT</span><strong>${profile.throughput_mbps} Mbps</strong></div>
+                <div class="network-profile-tile"><span>CONTROL PLANE</span><strong>${profile.control_plane}</strong></div>
+            `;
+        }
+
+        async function fetchNetworkContext(values, probability) {
+            const res = await fetch('/network_context', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    values,
+                    network_type: selectedNetwork,
+                    probability
+                })
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            return data;
+        }
+
+        async function enrichNetworkContext(values, prediction) {
+            const insight = document.getElementById('networkInsight');
+            insight.dataset.lastValues = JSON.stringify(values);
+            insight.dataset.lastProbability = prediction.probability;
+            try {
+                const context = await fetchNetworkContext(values, prediction.probability);
+                renderNetworkContext(context);
+            } catch (err) {
+                insight.innerHTML = `<div class="error-msg visible">${err.message}</div>`;
+                insight.classList.add('visible');
+            }
+        }
+
+        function renderEmptyNetworkDiagram() {
+            const profile = networkProfiles[selectedNetwork] || fallbackProfiles[selectedNetwork];
+            const path = [profile.radio, 'Transport', profile.core, 'IDS Sensor', 'AI Classifier', 'SOC Response'];
+            document.getElementById('networkFlow').innerHTML = path.map((node, index) =>
+                `<div class="network-node ${index >= 3 ? 'alert' : ''}">${node}</div>`
+            ).join('');
+            document.getElementById('networkThreatPills').innerHTML = profile.ids_focus.map(item =>
+                `<span class="threat-pill">${item}</span>`
+            ).join('');
+        }
+
+        function renderNetworkContext(context) {
+            const insight = document.getElementById('networkInsight');
+            const profile = context.profile;
+            const metrics = context.metrics;
+            const attackCategory = context.attack_category || {};
+            const matchText = context.matches_selected
+                ? `Traffic pattern matches selected ${profile.label}.`
+                : `Traffic behaves more like ${context.inference.inferred_network.toUpperCase()} while ${context.selected_network.toUpperCase()} is selected.`;
+
+            insight.innerHTML = `
+                <strong>${profile.label}</strong>
+                <div class="network-insight-grid">
+                    <div class="network-insight-kpi"><span>INFERRED NETWORK</span><strong>${context.inference.inferred_network.toUpperCase()} · ${context.inference.confidence}%</strong></div>
+                    <div class="network-insight-kpi"><span>LATENCY</span><strong>${metrics.latency_ms} ms</strong></div>
+                    <div class="network-insight-kpi"><span>PACKET RATE</span><strong>${metrics.packet_rate}</strong></div>
+                    <div class="network-insight-kpi"><span>LOAD</span><strong>${metrics.load_percent}%</strong></div>
+                    <div class="network-insight-kpi"><span>ANOMALY</span><strong>${metrics.attack_probability}%</strong></div>
+                    <div class="network-insight-kpi"><span>CORE / SLICE RISK</span><strong>${metrics.slice_risk}%</strong></div>
+                    <div class="network-insight-kpi"><span>ATTACK TYPE</span><strong>${attackCategory.label || 'Unknown'}</strong></div>
+                </div>
+                <div class="attack-type-panel">
+                    <strong>${attackCategory.family || 'Attack Category'} · ${attackCategory.confidence || 0}% category confidence</strong>
+                    <p>${attackCategory.description || 'No category details available.'}</p>
+                    <p><strong>Network surface:</strong> ${attackCategory.network_surface || 'Unknown'}</p>
+                    <div class="attack-evidence">
+                        ${(attackCategory.evidence || []).map(item => `<span>${item}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="${context.matches_selected ? 'info-box' : 'warning-box'}">
+                    <strong>Network Differentiation:</strong><br>${matchText}<br>
+                    <small>${context.inference.reason}</small>
+                </div>
+                <div class="info-box"><strong>IDS Action:</strong><br>${context.recommendation}</div>
+            `;
+            insight.classList.add('visible');
+
+            document.getElementById('networkFlow').innerHTML = context.ids_path.map((node, index) =>
+                `<div class="network-node ${index >= 3 ? 'alert' : ''}">${node}</div>`
+            ).join('');
+            document.getElementById('networkThreatPills').innerHTML = context.threat_surface.map(item =>
+                `<span class="threat-pill">${item}</span>`
+            ).join('');
+
+            const chartRows = [
+                ['Latency', Math.min(100, metrics.latency_ms), `${metrics.latency_ms}ms`],
+                ['Traffic Load', metrics.load_percent, `${metrics.load_percent}%`],
+                ['Anomaly', metrics.attack_probability, `${metrics.attack_probability}%`],
+                ['Core Risk', metrics.slice_risk, `${metrics.slice_risk}%`]
+            ];
+            document.getElementById('networkChartBars').innerHTML = chartRows.map(row => `
+                <div class="chart-row">
+                    <span>${row[0]}</span>
+                    <div class="chart-track"><div class="chart-fill" style="width:${row[1]}%"></div></div>
+                    <strong>${row[2]}</strong>
+                </div>
+            `).join('');
+            document.getElementById('networkChartSummary').innerHTML = `
+                <strong>${profile.core} IDS View</strong><br>
+                ${profile.radio} traffic is inspected through ${profile.control_plane}. Protocol ${metrics.protocol}, flow duration ${metrics.flow_duration}s, total bytes ${metrics.total_bytes}. Attack category: ${attackCategory.label || 'Unknown'}. ${context.recommendation}
+            `;
+        }
+
+        function severityClass(severity) {
+            return `sev-${String(severity || 'Informational').toLowerCase()}`;
+        }
+
+        async function refreshAlerts() {
+            const severity = document.getElementById('alertSeverityFilter')?.value || '';
+            const network = document.getElementById('alertNetworkFilter')?.value || '';
+            const attackType = document.getElementById('alertAttackFilter')?.value || '';
+            const params = new URLSearchParams({ limit: '30' });
+            if (severity) params.set('severity', severity);
+            if (network) params.set('network_type', network);
+            if (attackType) params.set('attack_category', attackType);
+
+            try {
+                const res = await fetch(`/alerts?${params.toString()}`);
+                const data = await res.json();
+                latestAlerts = data.alerts || [];
+                renderSocStats(data.stats || {});
+                renderAlerts(latestAlerts);
+            } catch (err) {
+                const wrap = document.getElementById('alertTableWrap');
+                if (wrap) wrap.innerHTML = `<div class="error-msg visible">Unable to load alerts: ${err.message}</div>`;
+            }
+        }
+
+        function renderSocStats(stats) {
+            const grid = document.getElementById('socStats');
+            if (!grid) return;
+            grid.innerHTML = `
+                <div class="soc-stat"><span>TOTAL EVENTS</span><strong>${stats.total_alerts || 0}</strong></div>
+                <div class="soc-stat"><span>ATTACK ALERTS</span><strong>${stats.attack_alerts || 0}</strong></div>
+                <div class="soc-stat"><span>CRITICAL</span><strong>${stats.critical_alerts || 0}</strong></div>
+                <div class="soc-stat"><span>HIGH</span><strong>${stats.high_alerts || 0}</strong></div>
+                <div class="soc-stat"><span>4G EVENTS</span><strong>${stats.by_network?.['4g'] || 0}</strong></div>
+                <div class="soc-stat"><span>5G EVENTS</span><strong>${stats.by_network?.['5g'] || 0}</strong></div>
+            `;
+        }
+
+        function renderAlerts(alerts) {
+            const wrap = document.getElementById('alertTableWrap');
+            if (!wrap) return;
+            if (!alerts.length) {
+                wrap.innerHTML = '<div class="empty-alerts">No alerts match the selected filters.</div>';
+                return;
+            }
+
+            wrap.innerHTML = `
+                <table class="alert-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Severity</th>
+                            <th>Network</th>
+                            <th>Attack Type</th>
+                            <th>Source</th>
+                            <th>Alert</th>
+                            <th>Score</th>
+                            <th>Response</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${alerts.map(alert => `
+                            <tr>
+                                <td>${new Date(alert.timestamp).toLocaleString()}</td>
+                                <td><span class="severity-pill ${severityClass(alert.severity)}">${alert.severity}</span></td>
+                                <td>${String(alert.network_type || '').toUpperCase()}</td>
+                                <td>${alert.attack_type || 'Unknown'}<br><small>${alert.attack_family || ''}</small></td>
+                                <td>${alert.source}</td>
+                                <td>${alert.title}</td>
+                                <td>${alert.score}</td>
+                                <td>${alert.recommended_response}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function exportAlerts() {
+            const payload = JSON.stringify({
+                exported_at: new Date().toISOString(),
+                alerts: latestAlerts
+            }, null, 2);
+            const blob = new Blob([payload], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `aegis_ids_alerts_${Date.now()}.json`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        async function clearAlerts() {
+            try {
+                await fetch('/alerts/clear', { method: 'POST' });
+                latestAlerts = [];
+                refreshAlerts();
+            } catch (err) {
+                showError('Unable to clear alerts: ' + err.message);
+            }
+        }
+
+        // ─── Feature Switching ───
+        function switchFeature(feature, btn) {
+            document.querySelectorAll('.feature-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            ['ip_reputation_content', 'network_traffic_content'].forEach(id => {
+                const el = document.getElementById(id);
+                el.classList.remove('active');
+            });
+            document.getElementById(feature + '_content').classList.add('active');
+            document.getElementById('reputation_result').style.display = 'none';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('networkInsight').classList.remove('visible');
+        }
+
+        // ─── Sub-tab Switching ───
+        function switchSubTab(tab, btn) {
+            document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('manual-subtab').style.display = tab === 'manual' ? 'block' : 'none';
+            document.getElementById('csv-subtab').style.display = tab === 'csv' ? 'block' : 'none';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('networkInsight').classList.remove('visible');
+        }
+
+        // ─── Build Form ───
+        function populateForm() {
+            const grid = document.getElementById('features-grid');
+            grid.innerHTML = '';
+            featureNames.forEach((feature, index) => {
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                div.style.animationDelay = `${index * 0.03}s`;
+                div.innerHTML = `
+                    <label><span>${index + 1}. ${feature}</span> <small>${featureDescriptions[feature] || ''}</small></label>
+                    <input type="number" step="any" id="feat_${index}" placeholder="${feature}">
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function getManualValues() {
+            const values = [];
+            for (let i = 0; i < featureNames.length; i++) {
+                const input = document.getElementById(`feat_${i}`);
+                if (!input.value && input.value !== '0') throw new Error(`Please enter value for ${featureNames[i]}`);
+                values.push(parseFloat(input.value));
+            }
+            return values;
+        }
+
+        function loadExample(type) {
+            const ex = examples[type];
+            if (!ex) return;
+            ex.values.forEach((val, i) => {
+                const inp = document.getElementById(`feat_${i}`);
+                if (inp) {
+                    inp.value = '';
+                    setTimeout(() => { inp.value = val; }, i * 15);
+                }
+            });
+            setTimeout(() => document.getElementById('manual-form').dispatchEvent(new Event('submit')), featureNames.length * 15 + 100);
+        }
+
+        function loadCSVExample(type) {
+            const ex = examples[type];
+            if (!ex) return;
+            document.getElementById('csv-values').value = ex.values.join(',');
+            predictCSV();
+        }
+
+        function clearForm() {
+            for (let i = 0; i < featureNames.length; i++) {
+                const inp = document.getElementById(`feat_${i}`);
+                if (inp) inp.value = '';
+            }
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('networkInsight').classList.remove('visible');
+        }
+
+        function clearCSV() {
+            document.getElementById('csv-values').value = '';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('networkInsight').classList.remove('visible');
+        }
+
+        // ─── Show Result ───
+        function showResult(result) {
+            const div = document.getElementById('result');
+            div.style.display = 'block';
+            div.className = `result-card ${result.is_attack ? 'result-attack' : 'result-normal'}`;
+            const conf = result.confidence.toFixed(1);
+            const attackCategory = result.attack_category || {};
+            const evidenceHtml = (attackCategory.evidence || []).map(item => `<span>${item}</span>`).join('');
+            const categoryPanel = `
+                <div class="attack-type-panel">
+                    <strong>${attackCategory.label || 'Normal / Benign'} · ${attackCategory.family || 'Baseline'}</strong>
+                    <p>${attackCategory.description || 'No category details available.'}</p>
+                    <p><strong>Category confidence:</strong> ${attackCategory.confidence || 0}%</p>
+                    <p><strong>Network surface:</strong> ${attackCategory.network_surface || 'Selected mobile network path'}</p>
+                    <div class="attack-evidence">${evidenceHtml}</div>
+                </div>
+            `;
+
+            div.innerHTML = result.is_attack ? `
+                <div class="result-icon">⚠️</div>
+                <div class="result-title">ATTACK DETECTED!</div>
+                <div class="result-confidence">Confidence: <strong>${conf}%</strong></div>
+                <div class="confidence-bar-container">
+                    <div class="confidence-bar-label"><span>Threat Probability</span><span>${conf}%</span></div>
+                    <div class="confidence-bar-track"><div class="confidence-bar-fill" id="confBar"></div></div>
+                </div>
+                <div class="result-score">Threat Level: ${result.threat_level} · Raw Score: ${result.probability.toFixed(6)}</div>
+                ${categoryPanel}
+                <div class="result-action" style="color: var(--danger);">⚠️ Immediate action recommended!</div>
+            ` : `
+                <div class="result-icon">✅</div>
+                <div class="result-title">NORMAL TRAFFIC</div>
+                <div class="result-confidence">Confidence: <strong>${conf}%</strong></div>
+                <div class="confidence-bar-container">
+                    <div class="confidence-bar-label"><span>Safety Score</span><span>${conf}%</span></div>
+                    <div class="confidence-bar-track"><div class="confidence-bar-fill" id="confBar"></div></div>
+                </div>
+                <div class="result-score">Safety Score: ${conf}% · Raw Score: ${result.probability.toFixed(6)}</div>
+                ${categoryPanel}
+                <div class="result-action" style="color: var(--success);">✅ Traffic appears legitimate</div>
+            `;
+
+            setTimeout(() => {
+                const bar = document.getElementById('confBar');
+                if (bar) bar.style.width = conf + '%';
+            }, 100);
+
+            div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            document.getElementById('graphsCard').style.display = 'block';
+            document.getElementById('graphsCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // ─── Error ───
+        function showError(msg) {
+            const err = document.getElementById('error');
+            err.textContent = '⚠️ ' + msg;
+            err.className = 'error-msg visible';
+            setTimeout(() => { err.className = 'error-msg'; }, 5000);
+        }
+
+        function setLoading(show) {
+            const el = document.getElementById('loading');
+            el.className = show ? 'loading visible' : 'loading';
+        }
+
+        // ─── Form Submit ───
+        document.getElementById('manual-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            document.getElementById('result').style.display = 'none';
+            try {
+                const values = getManualValues();
+                const res = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ values, network_type: selectedNetwork })
+                });
+                const data = await res.json();
+                if (data.error) showError(data.error);
+                else {
+                    showResult(data);
+                    await enrichNetworkContext(values, data);
+                    refreshAlerts();
+                }
+            } catch (err) {
+                showError('Error: ' + err.message);
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // ─── CSV Predict ───
+        async function predictCSV() {
+            const csv = document.getElementById('csv-values').value.trim();
+            if (!csv) { showError('Please enter comma-separated values'); return; }
+            setLoading(true);
+            document.getElementById('result').style.display = 'none';
+            try {
+                const res = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ csv_values: csv, network_type: selectedNetwork })
+                });
+                const data = await res.json();
+                if (data.error) showError(data.error);
+                else {
+                    const values = csv.split(',').map(v => parseFloat(v.trim()));
+                    showResult(data);
+                    await enrichNetworkContext(values, data);
+                    refreshAlerts();
+                }
+            } catch (err) {
+                showError('Error: ' + err.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // ─── IP Reputation ───
+        async function checkIPReputation() {
+            const ip = document.getElementById('reputation_ip').value.trim();
+            if (!ip) { showError('Please enter an IP address'); return; }
+
+            const resultDiv = document.getElementById('reputation_result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div style="text-align:center; padding: 30px;">
+                    <div class="scanner" style="margin: 0 auto 16px;">
+                        <div class="scanner-ring"></div>
+                        <div class="scanner-ring"></div>
+                        <div class="scanner-ring"></div>
+                        <div class="scanner-dot"></div>
+                    </div>
+                    <div class="loading-text">Analyzing IP address: ${ip}</div>
+                </div>`;
+
+            try {
+                const res = await fetch('/check_ip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip, network_type: selectedNetwork })
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    resultDiv.innerHTML = `<div class="error-msg visible">${data.error}</div>`;
+                    return;
+                }
+
+                const riskScore = data.risk_score || 0;
+                const riskLevel = data.risk_level || 'Unknown';
+                const riskColor = data.risk_color || '#6c6e8a';
+
+                let boxClass = 'info-box';
+                if (riskScore >= 70) boxClass = 'critical-box';
+                else if (riskScore >= 40) boxClass = 'warning-box';
+
+                let html = `
+                    <div style="border: 1px solid var(--border); border-radius: 16px; padding: 24px; background: var(--surface); animation: cardReveal 0.5s ease;">
+                        <div class="risk-display">
+                            <span class="risk-number" style="color: ${riskColor};">${riskScore}</span>
+                            <div class="risk-label">RISK SCORE (0–100)</div>
+                            <div class="risk-badge" style="color: ${riskColor}; border-color: ${riskColor}; background: ${riskColor}20;">
+                                ${riskLevel}
+                            </div>
+                        </div>
+                        <div class="${boxClass}">
+                            <strong>🚨 Severity Reason:</strong><br>
+                            ${data.severity_reason || 'Risk assessment based on multiple factors'}
+                        </div>`;
+
+                if (data.confidence_explanation?.length) {
+                    html += `<div class="info-box" style="margin-top:12px;">
+                        <strong>ℹ️ Confidence Breakdown:</strong>
+                        <ul class="reasons-list" style="margin-top:8px;">
+                            ${data.confidence_explanation.map((e, i) => `<li style="animation-delay:${i*0.05}s">${e}</li>`).join('')}
+                        </ul>
+                    </div>`;
+                }
+
+                html += `<div class="intel-grid">
+                    <div class="intel-card">
+                        <strong>📊 THREAT INTELLIGENCE</strong>
+                        <p>${data.threat_intel?.abuseipdb ? `
+                            Confidence: ${data.threat_intel.abuseipdb.confidence}%<br>
+                            Reports: ${data.threat_intel.abuseipdb.total_reports}<br>
+                            ISP: ${data.threat_intel.abuseipdb.isp || 'Unknown'}<br>
+                            Country: ${data.threat_intel.abuseipdb.country || 'Unknown'}
+                        ` : 'No threat intel data available'}</p>
+                    </div>
+                    <div class="intel-card">
+                        <strong>🔌 OPEN PORTS</strong>
+                        <p>${data.port_scan?.total_open > 0
+                            ? data.port_scan.open_ports.map(p => `${p.port}/${p.protocol} (${p.service})`).join(', ')
+                            : 'No suspicious open ports detected'}</p>
+                    </div>
+                </div>`;
+
+                if (data.reasons?.length) {
+                    html += `<div style="margin: 16px 0;">
+                        <strong style="color: var(--text); font-size:0.88em;">⚠️ REASONS FOR ASSESSMENT:</strong>
+                        <ul class="reasons-list" style="margin-top:10px;">
+                            ${data.reasons.map((r,i) => `<li style="animation-delay:${i*0.05}s">${r}</li>`).join('')}
+                        </ul>
+                    </div>`;
+                }
+
+                if (data.recommendations?.length) {
+                    html += `<div style="margin: 16px 0;">
+                        <strong style="color: var(--text); font-size:0.88em;">📝 RECOMMENDATIONS:</strong>
+                        <ul class="reasons-list" style="margin-top:10px;">
+                            ${data.recommendations.map((r,i) => `<li style="animation-delay:${i*0.05}s">${r}</li>`).join('')}
+                        </ul>
+                    </div>`;
+                }
+
+                if (data.gemini_analysis?.summary) {
+                    html += `<div class="info-box" style="margin-top:12px;">
+                        <strong>🤖 AI Analysis Summary:</strong><br>
+                        ${data.gemini_analysis.summary}
+                    </div>`;
+                }
+
+                html += '</div>';
+                resultDiv.innerHTML = html;
+                refreshAlerts();
+
+            } catch (err) {
+                resultDiv.innerHTML = `<div class="error-msg visible">Error: ${err.message}</div>`;
+            }
+        }
+
+        // ─── Modal ───
+        function openModal(src) {
+            const modal = document.getElementById('imageModal');
+            document.getElementById('modalImage').src = src;
+            modal.classList.add('open');
+        }
+        function closeModal() {
+            document.getElementById('imageModal').classList.remove('open');
+        }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+        // ─── Scroll Reveal ───
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('revealed');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+        // ─── Init ───
+        populateForm();
+        loadNetworkProfiles();
+        loadAttackCategories();
+        refreshAlerts();
+    </script>
+</body>
+</html>

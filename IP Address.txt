@@ -1,0 +1,5 @@
+IP Address	Expected Risk	Reason
+45.155.205.233	High (70+)	Known C2 server
+185.130.5.253	High (70+)	Known malware
+94.102.61.78	High (70+)	Cobalt Strike C2
+8.8.8.8	Low (0-10)	Google DNS (safe)
